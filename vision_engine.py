@@ -8,7 +8,7 @@ class LogiVisionEngine:
     def fetch_global_product_data(self, barcode: str):
         barcode = str(barcode).strip()
         
-        # Super stable fallback registry for testing
+        # Stable internal fallback registry for immediate testing
         fallback_registry = {
             "8901207001761": ("Dabur Honey Pure Gold", "Pantry Items"),
             "8901058862415": ("Maggi Noodles 70g", "Packaged Snacks"),
@@ -25,14 +25,16 @@ class LogiVisionEngine:
                 json_data = response.json()
                 if json_data.get("status") == 1:
                     product_info = json_data.get("product", {})
-                    return f"{product_info.get('brands', 'Generic')} {product_info.get('product_name', 'Unknown')}", product_info.get("categories", "Goods").split(",")[0]
+                    brand = product_info.get("brands", "Generic")
+                    name = product_info.get("product_name", "Unknown Product")
+                    cat = product_info.get("categories", "General Goods").split(",")[0]
+                    return f"{brand} {name}", cat
         except Exception:
             pass
             
         return f"Retail Asset [SKU: {barcode}]", "General Merchandise"
 
     def process_cloud_image(self, barcode_input):
-        """Processes data matching the chosen product code."""
         true_item_title, inferred_category = self.fetch_global_product_data(barcode_input)
         
         simulated_days_left = 2 if "Milk" in true_item_title else int(np.random.randint(45, 180))
@@ -45,3 +47,6 @@ class LogiVisionEngine:
             "inference_confidence": 0.998,
             "barcode_found": True
         }
+
+    def audit_package_stream(self, barcode_input="8901207001761"):
+        return self.process_cloud_image(barcode_input)
