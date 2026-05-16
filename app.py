@@ -1,86 +1,103 @@
-import cv2
-import zxingcpp
-import requests
+import streamlit as st
 import numpy as np
+from vision_engine import LogiVisionEngine
+from decision_orchestrator import LogiDecisionOrchestrator
 
-class LogiVisionEngine:
-    def __init__(self):
-        """
-        Initializes the live hardware engine with global API endpoints 
-        to fetch true real-world inventory identities.
-        """
-        self.api_url_primary = "https://world.openfoodfacts.org/api/v2/product/"
+# Initialize structural engine nodes
+vision_unit = LogiVisionEngine()
 
-    def fetch_global_product_data(self, barcode: str):
-        """
-        Queries live global internet catalogs to reverse-lookup the scanned 
-        barcode string into an exact brand and item title.
-        """
-        try:
-            response = requests.get(f"{self.api_url_primary}{barcode}.json", timeout=4)
-            if response.status_code == 200:
-                json_data = response.json()
-                if json_data.get("status") == 1:
-                    product_info = json_data.get("product", {})
-                    product_name = product_info.get("product_name", "Unknown Product")
-                    brand_name = product_info.get("brands", "Generic")
-                    category = product_info.get("categories", "General Inventory").split(",")[0]
-                    return f"{brand_name} {product_name}", category
-        except Exception:
-            pass
-            
-        return f"Registered Item [SKU: {barcode}]", "General Goods"
+# Set up browser page styling configurations
+st.set_page_config(page_title="LogiVision AI Control Room", layout="wide")
 
-    def scan_via_webcam(self):
-        """
-        Activates the camera hardware, decodes the physical barcode lines, 
-        and hits the global web API database.
-        """
-        cap = cv2.VideoCapture(0)
-        detected_barcode_str = None
+# Sidebar - Edge Telemetry Controls
+st.sidebar.markdown("### 🔑 Authentication Matrix")
+openai_api_key = st.sidebar.text_input(
+    "OpenAI Production Secret Key", 
+    type="password", 
+    placeholder="sk-...",
+    help="Provide your active OpenAI token to power the logistics orchestrator logic."
+)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🌍 Real-Time Regional Context")
+
+traffic_profile = st.sidebar.selectbox(
+    "Metro Traffic Status",
+    ["Low (Clear Flow)", "Moderate (Steady)", "High (Gridlock Congestion)"],
+    index=2
+)
+
+weather_profile = st.sidebar.selectbox(
+    "Local Weather Status",
+    ["Clear Skies / Dry", "Heavy Fog / Low Visibility", "Monsoons Heavy Downpour"],
+    index=2
+)
+
+fleet_profile = st.sidebar.selectbox(
+    "Assigned Fleet Asset",
+    ["Electric 2-Wheeler (EV)", "Standard 3-Wheeler Auto", "Refrigerated Medium Truck"],
+    index=0
+)
+
+language_profile = st.sidebar.selectbox(
+    "Target Regional Localization",
+    ["Telugu", "Hindi", "Tamil", "English"],
+    index=0
+)
+
+# Main Application Header Layout Panel
+st.title("👁️ LogiVision AI - Autonomous Dark Store Infrastructure Engine")
+st.markdown("---")
+
+# Main Interface Grid Split
+column_left, column_right = st.columns([1, 1.2])
+
+with column_left:
+    st.subheader("📸 Automated Edge-Camera Audit Desk")
+    st.info("System tracking ready. Trigger a scan package simulation to process the item payload.")
+    
+    if st.button("EXECUTE CONVOLUTIONAL SCAN SIMULATION", use_container_width=True):
+        # Trigger the clean hardware scanning method inside our vision file
+        telemetry_stream = vision_unit.audit_package_stream()
         
-        # Give the user up to 150 frames (~5 seconds) to align the barcode to the camera
-        for _ in range(150):
-            ret, frame = cap.read()
-            if not ret:
-                break
-                
-            # Scan the live image matrix for linear parallel barcodes
-            scan_results = zxingcpp.read_barcodes(frame)
-            for result in scan_results:
-                if result.text:
-                    detected_barcode_str = result.text.strip()
-                    break
-            
-            if detected_barcode_str:
-                break
-                
-        cap.release()
+        st.balloons()
+        st.success("Barcode telemetry parsed successfully!")
+
+        st.markdown("#### **Neural Net Spatial Extractions**")
+        m1, m2 = st.columns(2)
+        m1.metric("Predicted Item Category", telemetry_stream['item_category'])
+        m2.metric("CNN Prediction Confidence", f"{telemetry_stream['inference_confidence']*100:.2f}%")
         
-        if detected_barcode_str:
-            true_item_title, inferred_category = self.fetch_global_product_data(detected_barcode_str)
-            
-            simulated_days_left = 2 if "Milk" in true_item_title else int(np.random.randint(15, 120))
-            simulated_status = "PASS" if "Milk" in true_item_title or "Honey" in true_item_title else "COMPROMISED"
-            
-            return {
-                "item_category": f"{true_item_title} ({inferred_category})",
-                "structural_audit": simulated_status,
-                "expiration_horizon_days": simulated_days_left,
-                "inference_confidence": 0.999,
-                "barcode_found": True
-            }
-                
-        return {
-            "item_category": "No Package Detected in Frame",
-            "structural_audit": "N/A",
-            "expiration_horizon_days": 0,
-            "inference_confidence": 0.000,
-            "barcode_found": False
+        m3, m4 = st.columns(2)
+        m3.metric("Structural Verification Check", telemetry_stream['structural_audit'])
+        m4.metric("Days Until Item Expiry", f"{telemetry_stream['expiration_horizon_days']} Days")
+        
+        # Bundle global variables into a package for OpenAI processing
+        context_bundle = {
+            "traffic_index": traffic_profile,
+            "weather_condition": weather_profile,
+            "transport_medium": fleet_profile,
+            "target_language": language_profile
         }
-
-    def audit_package_stream(self):
-        """
-        Redirects front-end pipeline triggers straight into the webcam scanner channel.
-        """
-        return self.scan_via_webcam()
+        
+        with column_right:
+            st.subheader("🧠 Cognitive Supply-Chain Decision System")
+            
+            # Check if user entered an API Key before calling OpenAI
+            if not openai_api_key:
+                st.error("Critical Runtime System Initialization Halt: Provide a valid OpenAI API key in the configuration sidebar to generate operations briefings.")
+            else:
+                with st.spinner("Calculating alternative routing & generating alerts..."):
+                    try:
+                        # Instantiate the decision agent with the provided sidebar key
+                        orchestrator_unit = LogiDecisionOrchestrator(api_key=openai_api_key)
+                        
+                        # Generate the operational directives
+                        executive_decision = orchestrator_unit.generate_routing_strategy(
+                            vision_data=telemetry_stream,
+                            operational_context=context_bundle
+                        )
+                        st.markdown("#### **AI Operations Briefing Directives**")
+                        st.write(executive_decision)
+                    except Exception as e:
+                        st.error(f"Execution Error: {str(e)}")
