@@ -1,4 +1,6 @@
 streamlit
+opencv-python
+zxing-cpp
 requests
 numpy
 openai
