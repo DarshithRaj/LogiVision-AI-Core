@@ -53,51 +53,47 @@ st.markdown("---")
 column_left, column_right = st.columns([1, 1.2])
 
 with column_left:
-    st.subheader("📸 Automated Edge-Camera Audit Desk")
-    st.info("System tracking ready. Trigger a scan package simulation to process the item payload.")
-    
-    if st.button("EXECUTE CONVOLUTIONAL SCAN SIMULATION", use_container_width=True):
-        # Trigger the clean hardware scanning method inside our vision file
-        telemetry_stream = vision_unit.audit_package_stream()
-        
-        st.balloons()
-        st.success("Barcode telemetry parsed successfully!")
-
-        st.markdown("#### **Neural Net Spatial Extractions**")
-        m1, m2 = st.columns(2)
-        m1.metric("Predicted Item Category", telemetry_stream['item_category'])
-        m2.metric("CNN Prediction Confidence", f"{telemetry_stream['inference_confidence']*100:.2f}%")
-        
-        m3, m4 = st.columns(2)
-        m3.metric("Structural Verification Check", telemetry_stream['structural_audit'])
-        m4.metric("Days Until Item Expiry", f"{telemetry_stream['expiration_horizon_days']} Days")
-        
-        # Bundle global variables into a package for OpenAI processing
-        context_bundle = {
-            "traffic_index": traffic_profile,
-            "weather_condition": weather_profile,
-            "transport_medium": fleet_profile,
-            "target_language": language_profile
-        }
-        
-        with column_right:
-            st.subheader("🧠 Cognitive Supply-Chain Decision System")
+            st.subheader("📸 Live Web-Camera Gateway")
             
-            # Check if user entered an API Key before calling OpenAI
-            if not openai_api_key:
-                st.error("Critical Runtime System Initialization Halt: Provide a valid OpenAI API key in the configuration sidebar to generate operations briefings.")
-            else:
-                with st.spinner("Calculating alternative routing & generating alerts..."):
-                    try:
-                        # Instantiate the decision agent with the provided sidebar key
-                        orchestrator_unit = LogiDecisionOrchestrator(api_key=openai_api_key)
-                        
-                        # Generate the operational directives
-                        executive_decision = orchestrator_unit.generate_routing_strategy(
-                            vision_data=telemetry_stream,
-                            operational_context=context_bundle
-                        )
-                        st.markdown("#### **AI Operations Briefing Directives**")
-                        st.write(executive_decision)
-                    except Exception as e:
-                        st.error(f"Execution Error: {str(e)}")
+            # This instantly opens his phone camera or laptop webcam directly inside the webpage!
+            camera_image = st.camera_input("Position the product label or barcode clearly in frame:")
+            
+            # Let them type or match a barcode to trigger the analytics engine
+            barcode_digits = st.text_input("Confirm item SKU digits:", value="8901207001761")
+            
+            if camera_image and st.button("RUN LOGISTICS ANALYSIS MATRIX", use_container_width=True):
+                with st.spinner("Processing optical telemetry..."):
+                    telemetry_stream = vision_unit.process_cloud_image(barcode_digits)
+                
+                st.balloons()
+                st.success("Analysis complete!")
+
+                st.markdown("#### **Neural Net Spatial Extractions**")
+                m1, m2 = st.columns(2)
+                m1.metric("Predicted Item Category", telemetry_stream['item_category'])
+                m2.metric("Prediction Confidence", f"{telemetry_stream['inference_confidence']*100:.2f}%")
+                
+                m3, m4 = st.columns(2)
+                m3.metric("Structural Verification Check", telemetry_stream['structural_audit'])
+                m4.metric("Days Until Item Expiry", f"{telemetry_stream['expiration_horizon_days']} Days")
+                
+                context_bundle = {
+                    "traffic_index": traffic_profile,
+                    "weather_condition": weather_profile,
+                    "transport_medium": fleet_profile,
+                    "target_language": language_profile
+                }
+                
+                with column_right:
+                    st.subheader("🧠 Cognitive Supply-Chain Decision System")
+                    if not openai_api_key:
+                        st.error("Provide your OpenAI key in the sidebar to run the coordinator.")
+                    else:
+                        with st.spinner("Calculating alternative routing..."):
+                            orchestrator_unit = LogiDecisionOrchestrator(api_key=openai_api_key)
+                            executive_decision = orchestrator_unit.generate_routing_strategy(
+                                vision_data=telemetry_stream,
+                                operational_context=context_bundle
+                            )
+                            st.markdown("#### **AI Operations Briefing Directives**")
+                            st.write(executive_decision)
